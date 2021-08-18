@@ -5,7 +5,9 @@ require('gun/sea');
 
 const TerminalRenderer = require('marked-terminal');
 const Gun = require('gun');
+console.log("derp")
 const SEA = Gun.SEA;
+console.log("herp")
 // import Gun from 'gun'
 
 import { findPubKeyTweet } from './src/twitter/scrapeTwitter';
@@ -21,7 +23,7 @@ const gun = Gun({
   web: app.listen(port, () => { console.log(marked('**Gunpoint is running at http://localhost:' + port + '**')) }),
   peers: ["http://host.docker.internal:8765/gun"]
 });
-
+initGun()
 //Init Gun
 async function initGun() {
   let gunUser = gun.user()
@@ -37,19 +39,27 @@ async function initGun() {
         return cb.pub
       }
       //login if create failed
-      appGunPubKey = gun.user().auth("myriad-scraper6", "supahScr3tPwd", (cb: any) => {
-        console.log("auth user cb", cb);
+      gun.user().auth("myriad-scraper6", "supahScr3tPwd", async (cb: any) => {
+        // console.log("auth user cb", cb);
+        gunUser = gun.user()
+        if (!gunUser.is) {
+          console.log("LOGGED INTO GUN FAILED")
+          return;
+        }
+        console.log("current user:", gunUser.is)
+        initHTTPserver()
+        // gunUser.get('twitter_claims').on((value: any, key: any, _msg: any, _ev: any)=> {
+        //   console.log("Listening to twitter_claims", value)
+        // })
+        await gunUser.get('twitter_claims').put({"12345":"FE's twitter username"});
+        // await gunUser.get('twitter_claims').set("herpaderp");
+        console.log("saved twitter usernames", gunUser.get('twitter_claims').get("12345").val())
+        
         return cb.get;
       })
     })
   }
-  console.log("gunPubKey", appGunPubKey);
-  
-  gunUser.get('twitter_claims').on((value: any, key: any, _msg: any, _ev: any)=> {
-    console.log("Listening to twitter_claims", value, key, _msg, _ev)
-  })
-  gunUser.get('twitter_claims').set({"rei's pubKey":"rei's twitter username"});
-  console.log("saved twitter usernames", gunUser.get('twitter_claims'))
+
 
   //Encrypt data for sharing
   // var pair = await SEA.pair();
@@ -68,20 +78,20 @@ async function initGun() {
   // console.log(dec);
   // console.log(proof === check);
 }
-initGun()
-
-app.use(Gun.serve)
-app.use(express.json())
-
-app.get('/', (_,res) => res.send('TypeScript Express + GunDB Server'));
-
-app.get("/twitter/claim", (req, res) => {
-  let username = req.query.username;
-  let pubKey = req.query.pubKey!.toString();
-  if (typeof username != "string") {res.send("BAD")}
+function initHTTPserver() {
+  app.use(Gun.serve)
+  app.use(express.json())
   
-  let found = findPubKeyTweet(req.query.username, req.query.pubKey)
-  if (!found) return res.send("PubKey not found");
-
-  res.send(found);
-})
+  app.get('/', (_,res) => res.send('TypeScript Express + GunDB Server'));
+  
+  app.get("/twitter/claim", (req, res) => {
+    let username = req.query.username;
+    let pubKey = req.query.pubKey!.toString();
+    if (typeof username != "string") {res.send("BAD")}
+    
+    let found = findPubKeyTweet(req.query.username, req.query.pubKey)
+    if (!found) return res.send("PubKey not found");
+  
+    res.send(found);
+  })
+}
