@@ -113,6 +113,11 @@
     "@types/qs" "*"
     "@types/serve-static" "*"
 
+"@types/gun@^0.9.3":
+  version "0.9.3"
+  resolved "https://registry.yarnpkg.com/@types/gun/-/gun-0.9.3.tgz#cdc1116e4a43323733a577e7bc330fdf731a7446"
+  integrity sha512-ydC8P4EHbVUqSK4+BhVQW1b4DCksLVKdnLJENJYuiBQDvk2UfA79vTcKxG7hnpyHPas/7yT6pMviMSDp5m7rmg==
+
 "@types/marked@^2.0.4":
   version "2.0.4"
   resolved "https://registry.npmjs.org/@types/marked/-/marked-2.0.4.tgz"
@@ -1122,6 +1127,11 @@ pvutils@latest:
   version "1.0.17"
   resolved "https://registry.npmjs.org/pvutils/-/pvutils-1.0.17.tgz"
   integrity sha512-wLHYUQxWaXVQvKnwIDWFVKDJku9XDCvyhhxoq8dc5MFdIlRenyPI9eSfEtcvgHgD7FlvCyGAlWgOzRnZD99GZQ==
+
+python-shell@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/python-shell/-/python-shell-3.0.0.tgz#4eb04b6e7e8878e715b9ccd782b15194555dd074"
+  integrity sha512-vlIkpJBwkhtG8d2rBbPEweg+3UXdkoduRZ0jLbIX3efYutBjTdmdmMrEQCQy9tkabH36yUjOhwTPFkH3BvoYZQ==
 
 qs@6.7.0:
   version "6.7.0"

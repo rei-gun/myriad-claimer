@@ -1,16 +1,12 @@
 import marked from "marked";
 import express from "express";
+import { findPubKeyTweet } from "./src/twitter/scrapeTwitter"
 require('gun/axe');
 require('gun/sea');
 
 const TerminalRenderer = require('marked-terminal');
 const Gun = require('gun');
-console.log("derp")
 const SEA = Gun.SEA;
-console.log("herp")
-// import Gun from 'gun'
-
-import { findPubKeyTweet } from './src/twitter/scrapeTwitter';
 
 const port = process.env.PORT || 5000; 
 marked.setOptions({
@@ -19,10 +15,12 @@ marked.setOptions({
 
 const app = express();
 console.log(marked('# Starting Gunpoint API !'))
-const gun = Gun({ 
+export const gun = Gun({ 
   web: app.listen(port, () => { console.log(marked('**Gunpoint is running at http://localhost:' + port + '**')) }),
   peers: ["http://host.docker.internal:8765/gun"]
 });
+
+
 initGun()
 //Init Gun
 async function initGun() {
@@ -51,9 +49,9 @@ async function initGun() {
         // gunUser.get('twitter_claims').on((value: any, key: any, _msg: any, _ev: any)=> {
         //   console.log("Listening to twitter_claims", value)
         // })
-        await gunUser.get('twitter_claims').put({"12345":"FE's twitter username"});
+        // await gunUser.get('twitter_claims').put({"12345":"FE's twitter username"});
         // await gunUser.get('twitter_claims').set("herpaderp");
-        console.log("saved twitter usernames", gunUser.get('twitter_claims').get("12345").val())
+        console.log("saved twitter usernames", await gunUser.get('twitter_claims').get("rei__gun").once())
         
         return cb.get;
       })
@@ -86,12 +84,14 @@ function initHTTPserver() {
   
   app.get("/twitter/claim", (req, res) => {
     let username = req.query.username;
-    let pubKey = req.query.pubKey!.toString();
-    if (typeof username != "string") {res.send("BAD")}
+    let pubKey = req.query.pubKey;
+    if (typeof username !== "string" || typeof pubKey !== "string" ) res.send("BAD")
     
-    let found = findPubKeyTweet(req.query.username, req.query.pubKey)
-    if (!found) return res.send("PubKey not found");
+    findPubKeyTweet(username as string, pubKey as string, res)
+
+    // if (found == false) return res.send("PubKey not found")
   
-    res.send(found);
+    // res.send(found)
+    // res.send(found);
   })
 }
