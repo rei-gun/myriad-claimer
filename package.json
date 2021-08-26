@@ -20,6 +20,6 @@
   "license": "ISC",
   "scripts": {
     "start": "ts-node index.ts",
-    "build": "tsc --project ./"
+    "build": "tsc --project tsconfig.json"
   }
 }
