@@ -1,6 +1,8 @@
 import marked from "marked";
 import express from "express";
 import { findPubKeyTweet } from "./src/twitter/scrapeTwitter"
+import { findPubKeyRedditProfile } from "./src/reddit/claimReddit";
+import * as dotenv from 'dotenv';
 require('gun/axe');
 require('gun/sea');
 
@@ -8,18 +10,18 @@ const TerminalRenderer = require('marked-terminal');
 const Gun = require('gun');
 const SEA = Gun.SEA;
 
-const port = process.env.PORT || 5000; 
+dotenv.config();
+
+const port = process.env.PORT; 
 marked.setOptions({
   renderer: new TerminalRenderer()
 })
-
 const app = express();
 console.log(marked('# Starting Gunpoint API !'))
 export const gun = Gun({ 
   web: app.listen(port, () => { console.log(marked('**Gunpoint is running at http://localhost:' + port + '**')) }),
   peers: ["http://host.docker.internal:8765/gun"]
 });
-
 
 initGun()
 //Init Gun
@@ -31,13 +33,13 @@ async function initGun() {
     appGunPubKey = gunUser.is.pub;
   } else {
     console.log('You are NOT logged in');
-    appGunPubKey = gun.user().create("myriad-scraper6", "supahScr3tPwd", (cb: any) => {
+    appGunPubKey = gun.user().create(process.env.GUN_USER, process.env.GUN_PWD, (cb: any) => {
       console.log("create user cb", cb);
       if (cb.ok === 0) {
         return cb.pub
       }
       //login if create failed
-      gun.user().auth("myriad-scraper6", "supahScr3tPwd", async (cb: any) => {
+      gun.user().auth(process.env.GUN_USER, process.env.GUN_PWD, async (cb: any) => {
         // console.log("auth user cb", cb);
         gunUser = gun.user()
         if (!gunUser.is) {
@@ -82,16 +84,19 @@ function initHTTPserver() {
   
   app.get('/', (_,res) => res.send('TypeScript Express + GunDB Server'));
   
-  app.get("/twitter/claim", (req, res) => {
+  app.get("/twitter", (req, res) => {
     let username = req.query.username;
     let pubKey = req.query.pubKey;
     if (typeof username !== "string" || typeof pubKey !== "string" ) res.send("BAD")
     
     findPubKeyTweet(username as string, pubKey as string, res)
+  })
 
-    // if (found == false) return res.send("PubKey not found")
-  
-    // res.send(found)
-    // res.send(found);
+  app.get("/reddit", (req, res) => {
+    let username = req.query.username;
+    let pubKey = req.query.pubKey;
+    if (typeof username !== "string" || typeof pubKey !== "string" ) res.send("BAD")
+    
+    findPubKeyRedditProfile(username as string, pubKey as string, res)
   })
 }
