@@ -30,7 +30,10 @@ export async function findPubKeyRedditProfile(username: string, pubKey: string, 
             post.data.subreddit.toLowerCase() === "u_"+username &&
             (post.data.title.includes(pubKey) || post.data.selftext.includes(pubKey))
           ) {
-            return res.send(true)
+            res.send(true);
+            gunUser.get('reddit_claims').put({[pubKey]: username});
+            gunUser.get('twitter_claims').put({[username]: pubKey});
+            return;
           }
       });
       if (!res.headersSent) return res.send(false)
