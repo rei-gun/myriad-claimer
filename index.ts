@@ -37,8 +37,6 @@ gun.on("BYE", (cb) => {
 export let gunUser;
 gunLogin()
 initHTTPserver()
-
-//Init Gun
 async function gunLogin() {
   gunUser = gun.user()
   let appGunPubKey = "TBD"
@@ -60,6 +58,8 @@ async function gunLogin() {
           return;
         }
         console.log("current user:", gunUser.is)
+        initHTTPserver()
+        // console.log("saved twitter usernames", await gunUser.get("twitter_claims").get("rei__gun").once())
         return cb.get;
       })
     })
