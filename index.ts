@@ -2,31 +2,33 @@ import marked from "marked";
 import express from "express";
 import { findPubKeyTweet } from "./src/twitter/scrapeTwitter"
 import { findPubKeyRedditProfile } from "./src/reddit/claimReddit";
-import * as dotenv from 'dotenv';
-require('gun/axe');
-require('gun/sea');
+import { GetFbPosts } from "./src/facebook/facebookClaimer";
+import * as dotenv from "dotenv";
+require("gun/axe");
+require("gun/sea");
 
 const TerminalRenderer = require('marked-terminal');
 const Gun = require('gun');
 const SEA = Gun.SEA;
 
 dotenv.config();
-
+console.log("ENVIRONMENT", process.env.GUN_USER, process.env.GUN_PWD)
 const port = process.env.PORT; 
 marked.setOptions({
   renderer: new TerminalRenderer()
 })
 const app = express();
-console.log(marked('# Starting Gunpoint API !'))
+console.log(marked("Starting Myriad Claimer API!"));
 export const gun = Gun({ 
-  web: app.listen(port, () => { console.log(marked('**Gunpoint is running at http://localhost:' + port + '**')) }),
-  peers: ["http://host.docker.internal:8765/gun"]
+  web: app.listen(port, () => { console.log(marked('**Myriad Claimer (Express + GunDB) is running at http://localhost:' + port + '**')) }),
+  peers: [process.env.GUN_HOST]
 });
 
+export let gunUser;
 initGun()
 //Init Gun
 async function initGun() {
-  let gunUser = gun.user()
+  gunUser = gun.user()
   let appGunPubKey = "TBD"
   if (gunUser.is) {
     console.log('You are logged in');
@@ -43,51 +45,28 @@ async function initGun() {
         // console.log("auth user cb", cb);
         gunUser = gun.user()
         if (!gunUser.is) {
-          console.log("LOGGED INTO GUN FAILED")
+          console.log("GUN LOGIN FAILED")
           return;
         }
         console.log("current user:", gunUser.is)
         initHTTPserver()
-        // gunUser.get('twitter_claims').on((value: any, key: any, _msg: any, _ev: any)=> {
-        //   console.log("Listening to twitter_claims", value)
-        // })
-        // await gunUser.get('twitter_claims').put({"12345":"FE's twitter username"});
-        // await gunUser.get('twitter_claims').set("herpaderp");
-        console.log("saved twitter usernames", await gunUser.get('twitter_claims').get("rei__gun").once())
-        
+        // console.log("saved twitter usernames", await gunUser.get("twitter_claims").get("rei__gun").once())
         return cb.get;
       })
     })
   }
 
-
-  //Encrypt data for sharing
-  // var pair = await SEA.pair();
-  // console.log("mySEApair", pair)
-  // await gun.user().auth(pair, (u: any) => {
-  //   console.log("auth with pair callback", u)
-  // })
-  // var enc = await SEA.encrypt('hello self', pair);
-  // var data = await SEA.sign(enc, pair);
-  // console.log(data);
-  // var msg = await SEA.verify(data, pair.pub);
-  // var dec = await SEA.decrypt(msg, pair);
-  // var proof = await SEA.work(dec, pair);
-  // var check = await SEA.work('hello self', pair);
-
-  // console.log(dec);
-  // console.log(proof === check);
 }
 function initHTTPserver() {
   app.use(Gun.serve)
   app.use(express.json())
   
-  app.get('/', (_,res) => res.send('TypeScript Express + GunDB Server'));
+  app.get('/', (_,res) => res.send("TypeScript Express + GunDB Server"));
   
   app.get("/twitter", (req, res) => {
     let username = req.query.username;
     let pubKey = req.query.pubKey;
-    if (typeof username !== "string" || typeof pubKey !== "string" ) res.send("BAD")
+    if (typeof username !== "string" || typeof pubKey !== "string" ) return res.send("BAD")
     
     findPubKeyTweet(username as string, pubKey as string, res)
   })
@@ -98,5 +77,20 @@ function initHTTPserver() {
     if (typeof username !== "string" || typeof pubKey !== "string" ) res.send("BAD")
     
     findPubKeyRedditProfile(username as string, pubKey as string, res)
+  })
+
+  app.post("/facebook", (req, res) => {
+    let username = req.body.username;
+    let pubKey = req.body.pubKey;
+    if (typeof username !== "string" || typeof pubKey !== "string" ) res.send("BAD")
+    
+    GetFbPosts(username, pubKey, res)
+  })
+  app.get("/facebook", async (req, res) => {
+    let pubKey = req.query.pubKey;
+    if (typeof pubKey !== "string" ) res.send("BAD")
+    
+    const data = await gunUser.get("facebook_claims");
+    return data;
   })
 }
