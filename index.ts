@@ -14,13 +14,14 @@ const SEA = Gun.SEA;
 dotenv.config();
 console.log("ENVIRONMENT", process.env.GUN_USER, process.env.GUN_PWD)
 const port = process.env.PORT; 
+const app_host = process.env.APP_HOST; 
 marked.setOptions({
   renderer: new TerminalRenderer()
 })
 const app = express();
 console.log(marked("Starting Myriad Claimer API!"));
 export const gun = Gun({ 
-  web: app.listen(port, () => { console.log(marked('**Myriad Claimer (Express + GunDB) is running at http://localhost:' + port + '**')) }),
+  web: app.listen(parseInt(port), app_host, () => { console.log(marked("**Myriad Claimer's HTTP server running at "+app_host+"on port "+port+"**")) }),
   peers: [process.env.GUN_HOST]
 });
 
