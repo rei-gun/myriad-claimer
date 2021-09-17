@@ -5,6 +5,7 @@ services:
     image: gundb/gun:latest
     ports:
       - "8765:8765"
+    restart: always
   express:
     image: myriadsocial/myriad-claimer
     build: .
@@ -12,3 +13,4 @@ services:
       - 5001:5001
     env_file:
       - ./.env
+    restart: always
