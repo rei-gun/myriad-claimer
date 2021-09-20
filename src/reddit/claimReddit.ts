@@ -24,7 +24,6 @@ export async function findPubKeyRedditProfile(username: string, pubKey: string, 
   
   await axios.get("https://www.reddit.com/user/"+username+".json")
     .then((rresp: AxiosResponse<RedditResponse>) => {
-      
       rresp.data.data.children.forEach((post: RedditPost) => {
         if (post.data.author.toLowerCase() === username &&
             post.data.subreddit.toLowerCase() === "u_"+username &&
