@@ -16,9 +16,13 @@ export async function findPubKeyTweet(username: string, pubKey: string, res) {
       }
       else {
         console.log(`stdout: ${stdout}`);
-        gunUser.get('twitter_claims').put({[username]:pubKey});
-        gunUser.get('twitter_claims').put({[pubKey]:username});
-        !res.headersSent && stdout.includes(pubKey) ? res.send(true) : res.send(false)
+        
+        if (!res.headersSent && stdout.includes(pubKey)) {
+          gunUser.get('twitter_claims').put({[username]:pubKey});
+          gunUser.get('twitter_claims').put({[pubKey]:username});
+          return res.send(true);
+        } 
+        if (!res.headersSent) return res.send(false);
       }
   });
 }
