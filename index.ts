@@ -1,8 +1,9 @@
 import marked from "marked";
 import express from "express";
-import { findPubKeyTweet } from "./src/twitter/scrapeTwitter"
+import { findPubKeyTweet } from "./src/twitter/claimTwitter"
 import { findPubKeyRedditProfile } from "./src/reddit/claimReddit";
 import { GetFbPosts } from "./src/facebook/facebookClaimer";
+import { GunUser } from "./src/types";
 import * as dotenv from "dotenv";
 // require("gun/axe");
 require("gun/sea");
@@ -14,57 +15,60 @@ const Gun = require("gun");
 dotenv.config();
 const port = process.env.PORT; 
 const app_host = process.env.APP_HOST;
-export const claimerGunPubKey = "KPurBKihATPYjzx0zf6eBuhFkrKQrv2pnB2m3GZP30I.p6KytYxd8kFCxzDPSEL0qiR5Gft8biKYArLRNrgdD68";
+
 marked.setOptions({
   renderer: new TerminalRenderer()
 })
 const app = express();
 console.log(marked("Starting Myriad Claimer API!"));
-export const gun = Gun({ 
-  web: app.listen(parseInt(port), app_host, () => { console.log(marked("**Myriad Claimer's HTTP server running at "+app_host+" on port "+port+"**")) }),
-  peers: [process.env.GUN_HOST],
-  axe: false,
-});
-//cb triggered upon successful connection to peers
-gun.on("HI", (cb) => {
-  console.log("Peer Connected", cb)
-})
-//cb triggered upon disconnection to a peer
-gun.on("BYE", (cb) => {
-  console.log("Peer Disconnected", cb)
-})
 
-export let gunUser;
+export let gun;
+export let gunUser: GunUser;
 gunLogin()
 initHTTPserver()
 async function gunLogin() {
-  gunUser = gun.user()
-  let appGunPubKey = "TBD"
+  gun = Gun({ 
+    web: app.listen(parseInt(port), app_host, () => { console.log(marked("**Myriad Claimer's HTTP server running at "+app_host+" on port "+port+"**")) }),
+    peers: [process.env.GUN_HOST],
+    axe: false,
+  });
+  attachPeerConnectionListeners(gun);
+  gunUser = gun.user();
   if (gunUser.is) {
     console.log("You are logged in");
-    appGunPubKey = gunUser.is.pub;
   } else {
     console.log("You are NOT logged in");
-    appGunPubKey = gun.user().create(process.env.GUN_USER, process.env.GUN_PWD, (cb: any) => {
-      console.log("create user cb", cb);
-      if (cb.ok === 0) {
-        return cb.pub
+    //login if create failed
+    gun.user().auth(process.env.GUN_USER, process.env.GUN_PWD, async (cb: any) => {
+      gunUser = gun.user()
+      if (!gunUser.is) {
+        console.log("GUN LOGIN FAILED")
+        gun.user().create(process.env.GUN_USER, process.env.GUN_PWD, (cb: any) => {
+          console.log("create user cb", cb);
+          if (cb.ok === 0) {
+            return cb.pub
+          }
+        })
       }
-      //login if create failed
-      gun.user().auth(process.env.GUN_USER, process.env.GUN_PWD, async (cb: any) => {
-        gunUser = gun.user()
-        if (!gunUser.is) {
-          console.log("GUN LOGIN FAILED")
-          return;
-        }
-        console.log("current user:", gunUser.is)
-        initHTTPserver()
-        // console.log("saved twitter usernames", await gunUser.get("twitter_claims").get("rei__gun").once())
-        return cb.get;
-      })
+      console.log("current user:", gunUser.is)
+      initHTTPserver()
+      // console.log("saved twitter usernames", await gunUser.get("twitter_claims").get("rei__gun").once())
     })
+
   }
 }
+
+function attachPeerConnectionListeners(gun) {
+  //cb triggered upon successful connection to peers
+  gun.on("HI", (cb) => {
+    console.log("Peer Connected", cb)
+  })
+  //cb triggered upon disconnection to a peer
+  gun.on("BYE", (cb) => {
+    console.log("Peer Disconnected", cb)
+  })
+}
+
 function initHTTPserver() {
   app.use(Gun.serve)
   app.use(express.json())
@@ -80,12 +84,12 @@ function initHTTPserver() {
   })
   app.get("/twitter", async (req, res) => {
     let pubKey = req.query.pubKey as string;
-    let twitterUsername = (await gun.user(claimerGunPubKey).get("twitter_claims"))[pubKey];
+    let twitterUsername = (await gun.user(gunUser.is.pub).get("twitter_claims"))[pubKey];
     if (!twitterUsername) return res.send("Sorry, you haven't claimed a twitter account");
     return res.send(twitterUsername);
   })
   app.get("/twitter/all", async (_, res) => {
-    return res.send(await gun.user(claimerGunPubKey).get("twitter_claims"));
+    return res.send(await gun.user(gunUser.is.pub).get("twitter_claims"));
   })
 
   app.post("/dummy", async (_, res) => {
@@ -116,8 +120,7 @@ function initHTTPserver() {
   app.get("/facebook", async (req, res) => {
     let pubKey = req.query.pubKey;
     if (typeof pubKey !== "string" ) res.send("BAD")
-    
-    const data = await gunUser.get("facebook_claims");
-    return data;
+    const data = await gun.user(gunUser.is.pub).get("facebook_claims")
+    return res.send(data);
   })
 }
