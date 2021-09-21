@@ -83,3 +83,4 @@ dist
 # public
 
 twint
+*.csv
