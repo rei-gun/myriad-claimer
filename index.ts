@@ -73,7 +73,10 @@ function initHTTPserver() {
   app.use(Gun.serve)
   app.use(express.json())
   
-  app.get('/', (_,res) => res.send("TypeScript Express + GunDB Server"));
+  app.get('/', (_,res) => {
+    const claimerGunPubKey = gunUser.is.pub;
+    res.send("TypeScript Express + GunDB Server\n PubKey: "+claimerGunPubKey);
+  });
   
   app.post("/twitter", (req, res) => {
     let username = req.body.username;
@@ -84,9 +87,9 @@ function initHTTPserver() {
   })
   app.get("/twitter", async (req, res) => {
     let pubKey = req.query.pubKey as string;
-    let twitterUsername = (await gun.user(gunUser.is.pub).get("twitter_claims"))[pubKey];
-    if (!twitterUsername) return res.send("Sorry, you haven't claimed a twitter account");
-    return res.send(twitterUsername);
+    let twitterNode = await gun.user(gunUser.is.pub).get("twitter_claims");
+    if (!twitterNode || !twitterNode[pubKey]) return res.send("Sorry, you haven't claimed a twitter account");
+    return res.send(twitterNode[pubKey]);
   })
   app.get("/twitter/all", async (_, res) => {
     return res.send(await gun.user(gunUser.is.pub).get("twitter_claims"));
